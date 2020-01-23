@@ -36,24 +36,17 @@ done
 shift $(( OPTIND - 1 ))
 
 opt=${1:-on}
-osascript <<EOD
-  set opt to "$opt"
-  tell application "System Events" to tell application process "SystemUIServer"
-    try
-      set dnd_status to (exists menu bar item "Notification Center, Do Not Disturb enabled" of menu bar 1)
-      if opt is "status" then
-        set output to dnd_status as integer
-      else if {"on", "off"} contains opt then
-        key down option
-        if   (opt is "off" and dnd_status is true ) ¬
-          or (opt is "on"  and dnd_status is false) then
-          # name of menu bar item 1 of menu bar 1 starts with "Notification Center"
-          click (the first menu bar item of menu bar 1 whose name starts with "Notification Center")
-        end if
-        key up option
-      end if
-    on error
-      key up option
-    end try
-  end tell
-EOD
+status=$(defaults -currentHost read ~/Library/Preferences/ByHost/com.apple.notificationcenterui doNotDisturb)
+
+if [[ $opt == "status" ]]; then
+  echo $status
+elif [[ $opt == "on" ]]; then
+  defaults -currentHost write ~/Library/Preferences/ByHost/com.apple.notificationcenterui doNotDisturb -boolean true
+  defaults -currentHost write ~/Library/Preferences/ByHost/com.apple.notificationcenterui doNotDisturbDate -date "`date -u +\"%Y-%m-%d %H:%M:%S +000\"`"
+  # echo "Do Not Disturb is enabled. (OS X will turn it off automatically tomorrow)."
+  killall NotificationCenter
+elif [[  $opt == "off" ]]; then
+  defaults -currentHost write ~/Library/Preferences/ByHost/com.apple.notificationcenterui doNotDisturb -boolean false
+  # echo "Do Not Disturb is disabled."
+  killall NotificationCenter
+fi
