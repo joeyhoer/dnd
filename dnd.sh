@@ -2,7 +2,7 @@
 
 # Set global variables
 PROGNAME=$(basename "$0")
-VERSION='2.0.0'
+VERSION='2.0.1'
 DND_PLIST_ID='com.apple.ncprefs'
 DND_PLIST_KEY='dnd_prefs'
 DND_PLIST="$HOME/Library/Preferences/${DND_PLIST_ID}.plist"
@@ -41,7 +41,14 @@ get_dnd_status() {
 }
 
 enable_dnd() {
-  DND_HEX_DATA=$(get_nested_plist $DND_PLIST $DND_PLIST_KEY | plutil -insert userPref -xml "
+  # If the userPref key does not exist, insert it, otherwise replace it
+  enable_flag="-insert"
+  if get_nested_plist $DND_PLIST $DND_PLIST_KEY | \
+      plutil -extract userPref xml1 - >/dev/null 2>&1; then
+    enable_flag="-replace"
+  fi
+
+  DND_HEX_DATA=$(get_nested_plist $DND_PLIST $DND_PLIST_KEY | plutil $enable_flag userPref -xml "
     <dict>
         <key>date</key>
         <date>$(date -u +"%Y-%m-%dT%H:%M:%SZ")</date>
@@ -97,7 +104,7 @@ opt=${1:-on}
 if [[ $opt == "status" ]]; then
   get_dnd_status
 elif [[ $opt == "on" ]]; then
-  enable_dnd
+  if [[ $(get_dnd_status) == "false" ]]; then enable_dnd; fi
 elif [[  $opt == "off" ]]; then
-  disable_dnd
+  if [[ $(get_dnd_status) == "true" ]]; then disable_dnd; fi
 fi
