@@ -10,6 +10,7 @@ PROCESS_LIST=(
   #cfprefsd
   usernoted
   #NotificationCenter
+  ControlCenter
 )
 
 get_nested_plist(){
